@@ -1,0 +1,31 @@
+---
+- name: Set Static IP Address on Ubuntu Nodes
+  hosts: nodes
+  become: yes
+  vars:
+    # Customize these variables or move them to host_vars
+    iface: "{{ iface }}"
+    static_ip: "{{ static_ip }}"
+    gateway: "{{ gateway }}"
+    dns_servers: ["1.1.1.1", "8.8.8.8"]
+
+  tasks:
+    - name: Create Netplan configuration from template
+      ansible.builtin.template:
+        src: netplan_config.j2
+        dest: /etc/netplan/50-cloud-init.yaml
+        owner: root
+        group: root
+        mode: '0600'
+      register: netplan_updated
+
+    - name: Apply Netplan configuration
+      ansible.builtin.shell: |
+        nohup bash -c 'sleep 2 && netplan apply 2>&1 | grep -v "Cannot call Open vSwitch"' > /dev/null 2>&1 &
+      when: netplan_updated.changed
+      changed_when: true
+
+    - name: Display success message
+      ansible.builtin.debug:
+        msg: "Static IP {{ static_ip }} has been configured. Network will reconfigure in 2 seconds."
+      when: netplan_updated.changed

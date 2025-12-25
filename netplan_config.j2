@@ -1,0 +1,13 @@
+network:
+  version: 2
+  ethernets:
+    {{ iface }}:
+      dhcp4: false
+      mtu: 9000
+      addresses:
+        - {{ static_ip }}/24
+      routes:
+        - to: default
+          via: {{ gateway }}
+      nameservers:
+        addresses: {{ dns_servers }}
