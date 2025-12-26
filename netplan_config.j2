@@ -1,7 +1,10 @@
 network:
   version: 2
   ethernets:
-    {{ iface }}:
+    eth0:
+      match:
+        macaddress: {{ mac_address }} 
+      set-name: eth0
       dhcp4: false
       mtu: 9000
       addresses:
