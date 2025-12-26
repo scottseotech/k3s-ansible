@@ -1,0 +1,4 @@
+---
+# Multipath configuration defaults
+iscsi_multipath_user_friendly_names: "yes"
+iscsi_multipath_find_multipaths: "yes"

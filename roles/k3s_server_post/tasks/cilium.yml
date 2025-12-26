@@ -1,6 +1,6 @@
 ---
 - name: Prepare Cilium CLI on first master and deploy CNI
-  when: ansible_hostname == hostvars[groups[group_name_master | default('master')][0]]['ansible_hostname']
+  when: ansible_facts["hostname"] == hostvars[groups[group_name_master | default('master')][0]]['ansible_facts']['hostname']
   run_once: true
   block:
     - name: Create tmp directory on first master
@@ -185,7 +185,7 @@
         --helm-set bpf.loadBalancer.mode={{ bpf_lb_mode }}
         {% endif %}
       environment:
-        KUBECONFIG: "{{ ansible_user_dir }}/.kube/config"
+        KUBECONFIG: "{{ ansible_facts['user_dir'] }}/.kube/config"
       register: cilium_install_result
       changed_when: cilium_install_result.rc == 0
       when: cilium_installed.rc != 0 or cilium_needs_update

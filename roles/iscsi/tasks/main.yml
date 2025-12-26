@@ -1,0 +1,32 @@
+---
+- name: Install iSCSI and multipath packages
+  ansible.builtin.package:
+    name:
+      - open-iscsi
+      - lsscsi
+      - sg3-utils
+      - multipath-tools
+      - scsitools
+    state: present
+    update_cache: true
+
+- name: Configure multipath.conf
+  ansible.builtin.template:
+    src: multipath.conf.j2
+    dest: /etc/multipath.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart multipath-tools
+
+- name: Enable and start multipath-tools service
+  ansible.builtin.systemd:
+    name: multipath-tools
+    enabled: true
+    state: started
+
+- name: Enable and start open-iscsi service
+  ansible.builtin.systemd:
+    name: open-iscsi
+    enabled: true
+    state: started
