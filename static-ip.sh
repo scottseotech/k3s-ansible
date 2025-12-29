@@ -31,13 +31,13 @@ fi
 # Parse arguments
 ip_address=$1
 static_ip=$2
-macaddress=$3
+mac_address=$3
 gateway=${4:-192.168.30.1}
 
 cat ./hosts.tpl > hosts
 echo ${ip_address} >> hosts 
 
-ansible-playbook -i hosts -e "static_ip=${static_ip} macaddress=${macaddress} gateway=${gateway}" static-ip.yml
+ansible-playbook -i hosts -e "static_ip=${static_ip} mac_address=${mac_address} gateway=${gateway}" static-ip.yml
 
 rm -f hosts
 
