@@ -1,4 +1,4 @@
-proxmox_node = "pve" # CHANGE to your Proxmox node name (UI sidebar)
+proxmox_node = "pve"
 
 nodes = {
   cp1 = { vmid = 921, ip = "192.168.30.121/24", cores = 2, memory = 4096 }
