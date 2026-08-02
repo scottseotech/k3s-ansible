@@ -4,3 +4,4 @@
 *.tfstate.*
 *.auto.tfvars
 crash.log
+secrets
