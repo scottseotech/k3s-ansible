@@ -23,7 +23,7 @@ provider "proxmox" {
   }
 }
 
-resource "proxmox_virtual_environment_download_file" "ubuntu_cloud_image" {
+resource "proxmox_download_file" "ubuntu_cloud_image" {
   content_type = "iso"
   datastore_id = var.image_datastore
   node_name    = var.proxmox_node
@@ -76,7 +76,7 @@ resource "proxmox_virtual_environment_vm" "template" {
 
   disk {
     datastore_id = var.vm_datastore
-    file_id      = proxmox_virtual_environment_download_file.ubuntu_cloud_image.id
+    file_id      = proxmox_download_file.ubuntu_cloud_image.id
     interface    = "scsi0"
     size         = var.disk_size
     discard      = "on"
