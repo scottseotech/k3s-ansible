@@ -111,7 +111,7 @@ Host <name>
 * execute static-ip.sh to set interface name and static ip on physical nodes
 * site.yaml playbook configuration expects same interface name for all nodes
 * Configure inventory/minimal-cluster/group_vars/all.yml
-* run: ansible-playbook site.yml -i inventory/minimal-cluster/hosts.ini
+* run: ./deploy.sh minimal-cluster
 
 * ping 192.168.30.223 verify vip is working
 * mv kubeconfig ~/.kube/config

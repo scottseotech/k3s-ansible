@@ -58,4 +58,4 @@ if [ -n "$failed" ]; then
 fi
 
 echo "All nodes up. Next:"
-echo "  ansible-playbook site.yml -i inventory/minimal-cluster/hosts.ini"
+echo "  ./deploy.sh minimal-cluster"

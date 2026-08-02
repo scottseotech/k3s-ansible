@@ -43,7 +43,7 @@ export PROXMOX_VE_API_TOKEN='terraform@pve!provision=<uuid>'
 ./provision.sh
 
 # then deploy k3s
-ansible-playbook site.yml -i inventory/minimal-cluster/hosts.ini
+./deploy.sh minimal-cluster
 ```
 
 Direct tofu use: `tofu -chdir=terraform plan|apply|destroy`.
