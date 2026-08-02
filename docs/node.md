@@ -49,78 +49,20 @@ graph TB
     style W1 fill:#5a2d75,stroke:#ce93d8,color:#fff,stroke-width:2px
     style W2 fill:#5a2d75,stroke:#ce93d8,color:#fff,stroke-width:2px
 ```
-## Manual setup - Control Plane 
+## Control Plane and Worker VMs (OpenTofu)
 
-### Create Proxmox Template
+VM provisioning is automated — see `terraform/README.md`. In short:
 
-Look at this [video](https://www.youtube.com/watch?v=MJgIm03Jxdo&t=4s) for reference
-
-Click **"Create VM"** button on upper righthand corner and configure
-
-=== "**General**"
-    * VM ID: `900` (high number to show at bottom of list)
-
-=== "**OS**"
-    * Select `Do not use any media`
-
-=== "**System**"
-    * Enable `Qemu Agent`
-
-=== "**Disk**"
-    * Click trash icon to delete the disk
-
-=== "**CPU**"
-    * Cores: `2`
-
-=== "**Memory**"
-    * RAM: `2048 MiB`
-
-=== "**Network**"
-    * Use default settings
-
-=== "**Confirm**"
-    * Click `Finish`
-
-### Configure the template
-
-* Click on **Hardware** then click on **Add** then **Cloud Init Drive**
-
-```
-User           : ansibleuser
-Password       : your password
-SSH public key : copy and paste your ssh public key
-IP Config(net0): select DHCP
+```bash
+export PROXMOX_VE_ENDPOINT=https://<proxmox-ip>:8006/
+export PROXMOX_VE_API_TOKEN='terraform@pve!provision=<uuid>'
+./provision.sh
 ```
 
-* Click on **Regenerate Image**
-
-* Run the following in the Proxmox shell
-
-```
-wget https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img
-
-mv ubuntu-24.04-minimal-cloudimg-amd64.img ubuntu-24.04.qcow2
-
-qm set 900 --serial0 socket --vga serial0
-
-qemu-img resize ubuntu-24.04.qcow2 32G
-
-qm importdisk 900 ubuntu-24.04.qcow2 local-lvm
-```
-
-* Go back to **Hardware** and click on **Unused disk** or something. Select **Discard** then select **SSD emulation**
-
-* Right click on the template then convert to template
-
-* Clone with **Mode: Full Clone**
-
-### Post clone steps
-
-* Install qemu-guest-agent. The qemu agent enables advanced communication between guest and host. i.e. graceful shutdown. freezing of file system during backup and snapshot.
-
-```
-apt-get install qemu-guest-agent
-```
+This builds template VM 920 from the Ubuntu 24.04 minimal cloud image and
+clones cp1–cp3 (192.168.30.121–123) and wk1–wk2 (192.168.30.124–125).
+Cloud-init assigns static IPs and installs qemu-guest-agent, so neither
+`static-ip.sh` nor manual post-clone steps are needed for VMs.
 
 ## Manual setup - Worker Nodes
 
@@ -158,15 +100,16 @@ Host k3s2
 * Open up `https://github.com/scottseotech/k3s-ansible`
 * check out minimal-nodes-setup branch
 
-### Static IP and custom MTU
+### Static IP and custom MTU (physical nodes only)
 
+* VM static IPs are handled by cloud-init during provisioning — `static-ip.sh` applies only to physical nodes
 * cd into k3s-ansible repo
-* execute static-ip.sh to set interface name and static ip
+* execute static-ip.sh to set interface name and static ip on physical nodes
 * site.yaml playbook configuration expects same interface name for all nodes
-* Configure inventory/my-cluster/group_vars/all.yml
-* run deploy.sh
+* Configure inventory/minimal-cluster/group_vars/all.yml
+* run: ansible-playbook site.yml -i inventory/minimal-cluster/hosts.ini
 
-* ping 192.168.30.222 verify vip is working
+* ping 192.168.30.223 verify vip is working
 * mv kubeconfig ~/.kube/config
 * execute scripts/create-ns.sh
 * kubectl apply -f ./todo-secrets.yaml
