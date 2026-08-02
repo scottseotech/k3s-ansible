@@ -18,9 +18,17 @@ your SSH key, and installs qemu-guest-agent on first boot.
 
    Save the printed token value — it is shown once.
 
-2. **Snippets storage** — enable the `Snippets` content type on the `local`
-   datastore: Datacenter → Storage → local → Edit → Content → check Snippets.
-   (Used for the cloud-init vendor-data file.)
+2. **Snippets storage** — enable the `snippets` content type on the `local`
+   datastore (used for the cloud-init vendor-data file). From the Proxmox shell:
+
+   ```bash
+   # --content replaces the list, so keep the existing types and add snippets
+   pvesm set local --content iso,vztmpl,backup,snippets
+   ```
+
+   Or in the UI: Datacenter → Storage → **local** (type Directory, not
+   local-lvm — LVM storage cannot hold snippets and won't offer the option) →
+   Edit → Content → add Snippets.
 
 3. **SSH agent** — snippet upload happens over SSH as root. Ensure
    `ssh root@<proxmox-ip>` works and your key is loaded (`ssh-add -l`).
