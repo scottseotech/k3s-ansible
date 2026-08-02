@@ -1,4 +1,5 @@
 #!/bin/bash -e
+set -o pipefail
 
 cd "$(dirname "$0")"
 
@@ -6,7 +7,7 @@ if [ -z "${PROXMOX_VE_ENDPOINT:-}" ] || [ -z "${PROXMOX_VE_API_TOKEN:-}" ]; then
     echo "Error: PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN must be set."
     echo ""
     echo "Example:"
-    echo "  export PROXMOX_VE_ENDPOINT=https://192.168.30.202:8006/"
+    echo "  export PROXMOX_VE_ENDPOINT=https://192.168.30.43:8006/"
     echo "  export PROXMOX_VE_API_TOKEN='terraform@pve!provision=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'"
     echo ""
     echo "See terraform/README.md for one-time API token setup."
@@ -33,10 +34,16 @@ wait_for_ssh() {
     return 1
 }
 
+node_list=$(tofu -chdir=terraform output -json node_ips | jq -r 'to_entries[] | "\(.key)\t\(.value)"')
+if [ -z "$node_list" ]; then
+    echo "Error: could not read node_ips from tofu output"
+    exit 1
+fi
+
 failed=""
 while IFS=$'\t' read -r name ip; do
     wait_for_ssh "$name" "$ip" || failed="$failed $name"
-done < <(tofu -chdir=terraform output -json node_ips | jq -r 'to_entries[] | "\(.key)\t\(.value)"')
+done <<< "$node_list"
 
 if [ -n "$failed" ]; then
     echo "Error: nodes did not become reachable:$failed"
