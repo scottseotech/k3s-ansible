@@ -2,27 +2,26 @@
 
 ## Architecture Overview
 
-- **kube-vip**: Virtual IP load balancer for K8s API across control plane nodes
-- **Proxmox Host**: Virtualizes 3 K3s control plane nodes for high availability
-- **Physical Workers**: 2 bare-metal nodes for workload execution
+- **kube-vip**: Virtual IP (192.168.30.223) load balancer for K8s API across control plane nodes
+- **Proxmox Host**: Virtualizes all 5 K3s nodes — 3 control plane + 2 workers (provisioned by OpenTofu)
 - **TrueNAS**: Provides persistent storage via iSCSI (Democratic CSI)
 - **BackBlaze**: Off-site backup destination for disaster recovery
 
 ```mermaid
 graph TB
-    VIP{{"kube-vip<br/>192.168.30.222"}}
+    VIP{{"kube-vip<br/>192.168.30.223"}}
 
     subgraph Proxmox["Control Plane (Proxmox VMs)"]
         direction LR
-        CP1["CP-1<br/><small>192.168.30.111</small>"]
-        CP2["CP-2<br/><small>192.168.30.112</small>"]
-        CP3["CP-3<br/><small>192.168.30.113</small>"]
+        CP1["cp1<br/><small>192.168.30.121</small>"]
+        CP2["cp2<br/><small>192.168.30.122</small>"]
+        CP3["cp3<br/><small>192.168.30.123</small>"]
     end
 
-    subgraph Physical["Worker Nodes (Physical)"]
+    subgraph Physical["Worker Nodes (Proxmox VMs)"]
         direction LR
-        W1["Worker-1<br/><small>192.168.30.101</small>"]
-        W2["Worker-2<br/><small>192.168.30.102</small>"]
+        W1["wk1<br/><small>192.168.30.124</small>"]
+        W2["wk2<br/><small>192.168.30.125</small>"]
     end
 
     NAS[("TrueNAS<br/>192.168.30.224<br/><small>iSCSI Storage</small>")]
@@ -64,14 +63,19 @@ clones cp1–cp3 (192.168.30.121–123) and wk1–wk2 (192.168.30.124–125).
 Cloud-init assigns static IPs and installs qemu-guest-agent, so neither
 `static-ip.sh` nor manual post-clone steps are needed for VMs.
 
-## Manual setup - Worker Nodes
+## Manual setup - Physical Worker Nodes (optional)
+
+The minimal cluster is all-VM; these steps apply only if you later add a
+physical (bare-metal) node. Add its IP to the `[node]` group in
+`inventory/minimal-cluster/hosts.ini` — a node not in the inventory will
+never join the cluster.
 
 * Use Ubuntu 24.04 server minimal ISO image
 * Create a user `ansibleuser`
 
 ### Setup Passwordless SSH Auth
 ```bash
-ssh-copy-id ansibleuser@192.168.30.102
+ssh-copy-id ansibleuser@<physical-node-ip>
 ```
 
 ### Root passwordless
@@ -90,8 +94,8 @@ ansibleuser ALL=(ALL) NOPASSWD:ALL
 
 ### Create local ssh config
 ```bash
-Host k3s2
- HostName 192.168.30.102
+Host <name>
+ HostName <physical-node-ip>
  User ansibleuser
 ```
 

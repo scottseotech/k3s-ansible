@@ -46,9 +46,9 @@ variable "gateway" {
 }
 
 variable "dns_servers" {
-  description = "DNS servers for the nodes"
+  description = "DNS servers for the nodes (public fallback matches the retired static-ip.yml behavior)"
   type        = list(string)
-  default     = ["192.168.30.1"]
+  default     = ["192.168.30.1", "1.1.1.1"]
 }
 
 variable "ssh_public_key_file" {

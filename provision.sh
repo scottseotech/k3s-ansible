@@ -1,7 +1,14 @@
-#!/bin/bash -e
-set -o pipefail
+#!/bin/bash
+set -eo pipefail
 
 cd "$(dirname "$0")"
+
+for cmd in tofu jq nc; do
+    if ! command -v "$cmd" >/dev/null; then
+        echo "Error: required command '$cmd' not found in PATH"
+        exit 1
+    fi
+done
 
 if [ -z "${PROXMOX_VE_ENDPOINT:-}" ] || [ -z "${PROXMOX_VE_API_TOKEN:-}" ]; then
     echo "Error: PROXMOX_VE_ENDPOINT and PROXMOX_VE_API_TOKEN must be set."
