@@ -91,3 +91,62 @@ resource "proxmox_virtual_environment_vm" "template" {
     type = "l26"
   }
 }
+
+resource "proxmox_virtual_environment_vm" "node" {
+  for_each = var.nodes
+
+  name      = "k3s-${each.key}"
+  node_name = var.proxmox_node
+  vm_id     = each.value.vmid
+  tags      = ["k3s", "minimal-cluster"]
+
+  clone {
+    vm_id = proxmox_virtual_environment_vm.template.vm_id
+    full  = true
+  }
+
+  agent {
+    enabled = true
+  }
+
+  stop_on_destroy = true
+
+  cpu {
+    cores = each.value.cores
+    type  = "host"
+  }
+
+  memory {
+    dedicated = each.value.memory
+  }
+
+  initialization {
+    datastore_id = var.vm_datastore
+
+    ip_config {
+      ipv4 {
+        address = each.value.ip
+        gateway = var.gateway
+      }
+    }
+
+    dns {
+      servers = var.dns_servers
+    }
+
+    user_account {
+      username = var.vm_user
+      keys     = [trimspace(file(pathexpand(var.ssh_public_key_file)))]
+    }
+
+    vendor_data_file_id = proxmox_virtual_environment_file.vendor_data.id
+  }
+
+  network_device {
+    bridge = var.bridge
+  }
+
+  operating_system {
+    type = "l26"
+  }
+}
