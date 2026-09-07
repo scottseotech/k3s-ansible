@@ -14,7 +14,7 @@
 
 - Existing cluster untouched: do not modify existing VMs, template 900, `inventory/codingworks-cluster/`, `deploy.sh`, `site.yml`, or any role.
 - New node IPs: cp1–cp3 = 192.168.30.121–123 (VM IDs 921–923, 2 cores / 4096 MiB), wk1–wk2 = 192.168.30.124–125 (VM IDs 924–925, 4 cores / 8192 MiB). Template VM ID 920.
-- New cluster networking: `apiserver_endpoint: 192.168.30.223`, `metal_lb_ip_range: 192.168.30.31-192.168.30.60`, gateway 192.168.30.1.
+- New cluster networking: `apiserver_endpoint: 192.168.30.223`, `metal_lb_ip_range: 192.168.30.61-192.168.30.79` (corrected 2026-09-07; .31-.60 as originally written collides with `codingworks-cluster`), gateway 192.168.30.1.
 - No secrets in committed files. Proxmox credentials only via `PROXMOX_VE_ENDPOINT` / `PROXMOX_VE_API_TOKEN` env vars. `inventory/minimal-cluster/` is automatically gitignored by `inventory/.gitignore` — never `git add -f` it.
 - Ubuntu 24.04 minimal cloud image: `https://cloud-images.ubuntu.com/minimal/releases/noble/release/ubuntu-24.04-minimal-cloudimg-amd64.img`, disk resized to 32 GB.
 - SSH user on VMs: `ansibleuser`, public key from `~/.ssh/id_ed25519.pub`.
@@ -546,7 +546,9 @@ node
 2. `flannel_iface: eth0` → `flannel_iface: ens18` (Ubuntu cloud-image VMs on Proxmox name the virtio NIC `ens18`; Task 7 Step 3 verifies this against a real VM before Ansible runs)
 3. `k3s_token: ...` → a fresh alphanumeric token, e.g. output of `openssl rand -hex 16`
 
-Leave everything else as-is — in particular `metal_lb_ip_range: 192.168.30.31-192.168.30.60` is already the agreed range.
+~~Leave everything else as-is — in particular `metal_lb_ip_range: 192.168.30.31-192.168.30.60` is already the agreed range.~~
+
+**CORRECTED 2026-09-07.** That range collides head-on with `codingworks-cluster`, which owns .31-.60. Make it a **4th** change: `metal_lb_ip_range: 192.168.30.61-192.168.30.79`. See the correction note in the design spec for the failure mode.
 
 - [ ] **Step 4: Verify inventory parses and is NOT tracked by git**
 

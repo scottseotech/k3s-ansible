@@ -46,6 +46,19 @@ later (`tofu plan` will show whether a change is in-place or forces recreation).
 - `metal_lb_ip_range`: **192.168.30.31–192.168.30.60**
 - Verified non-colliding with existing cluster (VIP .222, MetalLB .10–.30)
 
+> **CORRECTION (2026-09-07): the line above is wrong and caused an outage.**
+> The existing `codingworks-cluster` MetalLB range is **.31–.60**, not .10–.30
+> — see `inventory/codingworks-cluster/group_vars/all.yml`. The collision check
+> was actually performed, but against a wrong premise: .31–.60 was chosen
+> *because* it was believed to begin exactly where prod's range ended.
+>
+> Both clusters then assigned `192.168.30.31` to their own Traefik and fought
+> over it by gratuitous ARP for 35 days. Symptom: prod hostnames intermittently
+> 404 with `CN=TRAEFIK DEFAULT CERT` for off-cluster clients (Cloudflare One
+> VPN, LAN gateway) while every in-cluster `curl` reported success.
+>
+> Corrected range for a rebuilt minimal cluster: **192.168.30.61–192.168.30.79**.
+
 ## Terraform Layout
 
 ```

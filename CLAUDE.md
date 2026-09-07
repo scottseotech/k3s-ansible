@@ -119,6 +119,11 @@ Located in `inventory/*/group_vars/all.yml`:
 - CNI interface: One of `flannel_iface`, `calico_iface`, or `cilium_iface`
 - Load balancer IP range: `metal_lb_ip_range` or `kube_vip_lb_ip_range`
 
+`apiserver_endpoint` and `metal_lb_ip_range` must BOTH be unique per cluster
+when clusters share an L2 segment. See the comment above `metal_lb_ip_range`
+in `inventory/sample/group_vars/all.yml` for why the second one is easy to
+miss and hard to diagnose.
+
 ## Development Notes
 
 ### When Modifying Roles

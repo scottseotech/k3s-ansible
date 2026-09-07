@@ -112,6 +112,21 @@ metal_lb_speaker_tag_version: v0.14.8
 metal_lb_controller_tag_version: v0.14.8
 
 # metallb ip range for load balancer
+#
+# MUST NOT overlap another cluster's range on a shared L2 segment. MetalLB
+# layer2 claims these addresses by gratuitous ARP, and each cluster's speakers
+# form their own memberlist with no knowledge of the other's. Two clusters
+# sharing a range will both answer for the same IP, and whichever announced
+# most recently wins — separately for every observer, and intermittently.
+#
+# What makes this genuinely hard to catch: cluster member nodes are immune,
+# because kube-proxy short-circuits the LoadBalancer IP locally and never
+# ARPs for it. So `curl` from any node in either cluster reports success while
+# off-cluster clients (a VPN connector, the LAN gateway, a laptop) get sent to
+# the wrong cluster. It reads as flaky DNS or a flaky VPN, not as a conflict.
+#
+# Change this whenever you change apiserver_endpoint. A new cluster needs BOTH
+# to be unique, and only the second one is obvious.
 metal_lb_ip_range: 192.168.30.80-192.168.30.90
 
 # Only enable if your nodes are proxmox LXC nodes, make sure to configure your proxmox nodes
