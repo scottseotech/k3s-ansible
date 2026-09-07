@@ -108,7 +108,17 @@ Host <name>
 
 * VM static IPs are handled by cloud-init during provisioning — `static-ip.sh` applies only to physical nodes
 * cd into k3s-ansible repo
-* execute static-ip.sh to set interface name and static ip on physical nodes
+* execute static-ip.sh to set interface name and static ip on physical nodes:
+  `./static-ip.sh <current_ip> <new_static_ip>`
+* omit the MAC argument unless deliberately pinning to a NIC other than the one
+  the node is currently reachable on. The playbook auto-detects the live NIC and
+  refuses to write a MAC that is not present on the target, because netplan matches
+  by MAC with `dhcp4: false` — a stale MAC leaves the node with no interface at all,
+  recoverable only from a physical console. This is what happened to w102 after a
+  board swap (2026-08-23)
+* if the NIC is not already named eth0, the node must be REBOOTED to finish:
+  systemd-networkd cannot rename an interface that is UP, and k3s-node.service
+  hardcodes `--flannel-iface=eth0`
 * site.yaml playbook configuration expects same interface name for all nodes
 * Configure inventory/minimal-cluster/group_vars/all.yml
 * run: ./deploy.sh minimal-cluster

@@ -1,15 +1,50 @@
 ---
 - name: Set Static IP Address on Ubuntu Nodes
   hosts: nodes
-  become: yes
+  become: true
   vars:
-    # Customize these variables or move them to host_vars
-    iface: "{{ iface }}"
-    static_ip: "{{ static_ip }}"
-    gateway: "{{ gateway }}"
     dns_servers: ["1.1.1.1", "8.8.8.8"]
+    # mac_address is optional. Omitted, we pin to the NIC the node is currently
+    # reachable on, which is correct by construction. Pass it explicitly only
+    # when deliberately targeting a different NIC than the one in use.
+    resolved_mac: "{{ (mac_address | default('', true) or ansible_default_ipv4.macaddress) | lower }}"
 
   tasks:
+    - name: Collect MAC addresses present on this host
+      ansible.builtin.shell: |
+        for f in /sys/class/net/*/address; do
+          d=$(dirname "$f")
+          # only real NICs; skips flannel/cni veths, which are ephemeral
+          [ -e "$d/device" ] || continue
+          cat "$f"
+        done
+      register: host_macs
+      changed_when: false
+      check_mode: false
+
+    - name: Refuse to write a MAC that does not exist on this host
+      ansible.builtin.assert:
+        that:
+          - resolved_mac in (host_macs.stdout_lines | map('lower') | list)
+        fail_msg: >-
+          MAC {{ resolved_mac }} is not present on {{ inventory_hostname }}.
+          Netplan matches the NIC by MAC and dhcp4 is false, so writing this would leave the node
+          with no interface at all after reboot, recoverable only from a physical console.
+          MACs present on this host: {{ host_macs.stdout_lines | join(', ') }}
+        success_msg: "MAC {{ resolved_mac }} is present on {{ inventory_hostname }}."
+
+    - name: Find the current kernel name of the target interface
+      ansible.builtin.shell: |
+        for f in /sys/class/net/*/address; do
+          if [ "$(cat "$f")" = "{{ resolved_mac }}" ]; then
+            basename "$(dirname "$f")"
+            break
+          fi
+        done
+      register: target_iface
+      changed_when: false
+      check_mode: false
+
     - name: Create Netplan configuration from template
       ansible.builtin.template:
         src: netplan_config.j2
@@ -25,7 +60,17 @@
       when: netplan_updated.changed
       changed_when: true
 
-    - name: Display success message
+    - name: Report what still needs to happen
       ansible.builtin.debug:
-        msg: "Static IP {{ static_ip }} has been configured. Network will reconfigure in 2 seconds."
+        msg: >-
+          {% if (target_iface.stdout | trim) != 'eth0' %}
+          Static IP {{ static_ip }} written, pinned to {{ resolved_mac }}.
+          Interface {{ target_iface.stdout | trim }} still needs renaming to eth0, and
+          systemd-networkd cannot rename an interface that is UP, so REBOOT {{ inventory_hostname }}
+          to finish. netplan apply alone is not enough, and k3s-node.service hardcodes
+          --flannel-iface=eth0 so the node will not join until the rename lands.
+          {% else %}
+          Static IP {{ static_ip }} written, pinned to {{ resolved_mac }}.
+          Interface is already eth0; network reconfigures in 2 seconds, no reboot required.
+          {% endif %}
       when: netplan_updated.changed
